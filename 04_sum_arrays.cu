@@ -17,7 +17,6 @@ void sumArrays(float* a, float* b, float* res, const int size)
 
 __global__ void sumArraysGPU(float* a, float* b, float* res)
 {
-    // int i=threadIdx.x;
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     res[i] = a[i] + b[i];
 }
@@ -27,18 +26,16 @@ int main(int argc, char** argv)
     int dev = 0;
     cudaSetDevice(dev);
 
-    int nElem = 1 << 14;
+    int nElem = 4096;
     printf("Vector size:%d\n", nElem);
     int nByte = sizeof(float) * nElem;
 
-    // host data
+    // host data, nElem维向量
     float* a_h = (float*)malloc(nByte);
-    printf("%x\n", a_h);
     float* b_h = (float*)malloc(nByte);
     float* res_h = (float*)malloc(nByte);
     float* res_from_gpu_h = (float*)malloc(nByte);
     memset(res_h, 0, nByte);
-    printf("%x\n", a_h);
     memset(res_from_gpu_h, 0, nByte);
 
     // device data
@@ -46,25 +43,25 @@ int main(int argc, char** argv)
 
     // 为什么要传入二维指针：a_d这个指针是存储在主存上的, 之所以取a_d的地址,
     // 是为了将cudaMalloc在显存上获得的数组首地址赋值给a_d
-    printf("%x\n", a_d);
-    CHECK(cudaMalloc((float**)&a_d, nByte));
-    printf("%x\n", a_d);
+    cudaMalloc((float**)&a_d, nByte);
+    cudaMalloc((float**)&b_d, nByte);
+    cudaMalloc((float**)&res_d, nByte);
 
-    CHECK(cudaMalloc((float**)&b_d, nByte));
-    CHECK(cudaMalloc((float**)&res_d, nByte));
+    for (int i = 0; i < nElem; i++)
+    {
+        a_h[i] = i;
+        b_h[i] = i;
+    }
 
-    initialData(a_h, nElem);
-    initialData(b_h, nElem);
-
-    CHECK(cudaMemcpy(a_d, a_h, nByte, cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(b_d, b_h, nByte, cudaMemcpyHostToDevice));
+    cudaMemcpy(a_d, a_h, nByte, cudaMemcpyHostToDevice);
+    cudaMemcpy(b_d, b_h, nByte, cudaMemcpyHostToDevice);
 
     dim3 block(1024);
     dim3 grid(nElem / block.x);
     sumArraysGPU<<<grid, block>>>(a_d, b_d, res_d);
-    printf("Execution configuration<<<%d,%d>>>\n", grid.x, block.x);
+    printf("Execution configuration: <<<%d,%d>>>\n", grid.x, block.x);
 
-    CHECK(cudaMemcpy(res_from_gpu_h, res_d, nByte, cudaMemcpyDeviceToHost));
+    cudaMemcpy(res_from_gpu_h, res_d, nByte, cudaMemcpyDeviceToHost);
     sumArrays(a_h, b_h, res_h, nElem);
 
     checkResult(res_h, res_from_gpu_h, nElem);
