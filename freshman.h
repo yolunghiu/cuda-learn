@@ -47,11 +47,16 @@ double cpuSecond()
 
 void initialData(float* ip, int size)
 {
-    time_t t;
+    /*time_t t;
     srand((unsigned)time(&t));
     for (int i = 0; i < size; i++)
     {
         ip[i] = (float)(rand() & 0xffff) / 1000.0f;
+    }*/
+
+    for (int i = 1; i <= size; i++)
+    {
+        ip[i - 1] = (float)i;
     }
 }
 
@@ -67,15 +72,14 @@ void initialData_int(int* ip, int size)
 
 void printMatrix(float* C, const int nx, const int ny)
 {
-    float* ic = C;
-    printf("Matrix<%d,%d>:", ny, nx);
+    printf("Matrix<%d,%d>:\n", ny, nx);
+
     for (int i = 0; i < ny; i++)
     {
         for (int j = 0; j < nx; j++)
         {
-            printf("%6f ", C[j]);
+            printf("%2f ", C[j + i * nx]);
         }
-        ic += nx;
         printf("\n");
     }
 }
